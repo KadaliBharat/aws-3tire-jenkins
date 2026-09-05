@@ -18,7 +18,5 @@ resource "aws_db_instance" "primary" {
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [var.db_sg_id]
   skip_final_snapshot    = true
-  
-  # Required for read replicas
-  backup_retention_period = 7
+  backup_retention_period = 0
 }

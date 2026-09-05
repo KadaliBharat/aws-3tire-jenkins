@@ -17,7 +17,7 @@ data "aws_ami" "ubuntu" {
 resource "aws_launch_template" "app" {
   name_prefix   = "${var.environment}-app-lt"
   image_id      = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
+  instance_type = "t2.micro"
 
   iam_instance_profile {
     name = var.iam_instance_profile_name
@@ -39,7 +39,6 @@ resource "aws_launch_template" "app" {
 resource "aws_autoscaling_group" "app" {
   name                = "${var.environment}-app-asg"
   vpc_zone_identifier = var.private_subnet_ids
-  target_group_arns   = [var.target_group_arn]
   
   min_size         = 2
   max_size         = 4

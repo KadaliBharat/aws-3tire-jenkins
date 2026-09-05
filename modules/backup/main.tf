@@ -41,10 +41,9 @@ resource "aws_backup_selection" "this" {
   name         = "${var.environment}-backup-selection"
   plan_id      = aws_backup_plan.this.id
 
-  condition {
-    string_equals {
-      key   = "aws:ResourceTag/Backup"
-      value = "true"
-    }
+  selection_tag {
+    type  = "STRINGEQUALS"
+    key   = "Backup"
+    value = "true"
   }
 }

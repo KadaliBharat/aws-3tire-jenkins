@@ -26,15 +26,6 @@ module "iam" {
   environment = var.environment
 }
 
-# Phase 3: Public NLB
-module "public_nlb" {
-  source            = "../../modules/public-nlb"
-  environment       = var.environment
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
-  nlb_sg_id         = module.security_groups.public_nlb_sg_id
-}
-
 # Phase 3: Web ASG
 module "web_asg" {
   source                    = "../../modules/web-asg"
@@ -42,16 +33,6 @@ module "web_asg" {
   public_subnet_ids         = module.vpc.public_subnet_ids
   web_sg_id                 = module.security_groups.web_sg_id
   iam_instance_profile_name = module.iam.ec2_instance_profile_name
-  target_group_arn          = module.public_nlb.target_group_arn
-}
-
-# Phase 4: Private NLB
-module "private_nlb" {
-  source             = "../../modules/private-nlb"
-  environment        = var.environment
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
-  private_nlb_sg_id  = module.security_groups.private_nlb_sg_id
 }
 
 # Phase 4: App ASG
@@ -61,7 +42,6 @@ module "app_asg" {
   private_subnet_ids        = module.vpc.private_subnet_ids
   app_sg_id                 = module.security_groups.app_sg_id
   iam_instance_profile_name = module.iam.ec2_instance_profile_name
-  target_group_arn          = module.private_nlb.target_group_arn
 }
 
 # Phase 5: Primary Database
@@ -72,16 +52,6 @@ module "rds_primary" {
   db_sg_id      = module.security_groups.db_sg_id
   db_username   = var.db_username
   db_password   = var.db_password
-}
-
-# Phase 5: Cross-Region Replica
-module "rds_replica" {
-  source = "../../modules/rds-replica"
-  providers = {
-    aws.dr = aws.dr
-  }
-  environment    = var.environment
-  primary_db_arn = module.rds_primary.primary_db_arn
 }
 
 # Phase 6: Backup
