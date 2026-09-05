@@ -26,6 +26,15 @@ module "iam" {
   environment = var.environment
 }
 
+# Phase 3: Public ALB
+module "public_alb" {
+  source            = "../../modules/public-alb"
+  environment       = var.environment
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  nlb_sg_id         = module.security_groups.public_nlb_sg_id
+}
+
 # Phase 3: Web ASG
 module "web_asg" {
   source                    = "../../modules/web-asg"
@@ -33,6 +42,16 @@ module "web_asg" {
   public_subnet_ids         = module.vpc.public_subnet_ids
   web_sg_id                 = module.security_groups.web_sg_id
   iam_instance_profile_name = module.iam.ec2_instance_profile_name
+  target_group_arn          = module.public_alb.target_group_arn
+}
+
+# Phase 4: Private ALB
+module "private_alb" {
+  source             = "../../modules/private-alb"
+  environment        = var.environment
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+  private_nlb_sg_id  = module.security_groups.private_nlb_sg_id
 }
 
 # Phase 4: App ASG
@@ -42,6 +61,7 @@ module "app_asg" {
   private_subnet_ids        = module.vpc.private_subnet_ids
   app_sg_id                 = module.security_groups.app_sg_id
   iam_instance_profile_name = module.iam.ec2_instance_profile_name
+  target_group_arn          = module.private_alb.target_group_arn
 }
 
 # Phase 5: Primary Database

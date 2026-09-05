@@ -1,30 +1,34 @@
-# main.tf
 resource "aws_lb" "public" {
-  name               = "${var.environment}-public-nlb"
+  name               = "${var.environment}-public-alb"
   internal           = false
-  load_balancer_type = "network"
-  subnets            = var.public_subnet_ids
+  load_balancer_type = "application"
   security_groups    = [var.nlb_sg_id]
+  subnets            = var.public_subnet_ids
 
-  tags = { Name = "${var.environment}-public-nlb" }
+  tags = { Name = "${var.environment}-public-alb" }
 }
 
 resource "aws_lb_target_group" "web" {
   name     = "${var.environment}-web-tg"
   port     = 80
-  protocol = "TCP"
+  protocol = "HTTP"
   vpc_id   = var.vpc_id
 
   health_check {
-    protocol = "TCP"
-    port     = "traffic-port"
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 }
 
 resource "aws_lb_listener" "web" {
   load_balancer_arn = aws_lb.public.arn
   port              = 80
-  protocol          = "TCP"
+  protocol          = "HTTP"
 
   default_action {
     type             = "forward"

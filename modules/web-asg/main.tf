@@ -39,6 +39,7 @@ resource "aws_launch_template" "web" {
 resource "aws_autoscaling_group" "web" {
   name                = "${var.environment}-web-asg"
   vpc_zone_identifier = var.public_subnet_ids
+  target_group_arns   = [var.target_group_arn]
   
   min_size         = 1
   max_size         = 2
