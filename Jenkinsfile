@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ACTION', choices: ['APPLY', 'DESTROY'], description: 'Choose whether to build or destroy the infrastructure')
+    }
+
     environment {
         // AWS Credentials from Jenkins Credentials Store
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
@@ -38,6 +42,7 @@ pipeline {
         }
 
         stage('Terraform Plan') {
+            when { expression { params.ACTION == 'APPLY' } }
             steps {
                 dir('environments/dev') {
                     sh 'terraform plan -out=tfplan'
@@ -48,7 +53,8 @@ pipeline {
         stage('Approval') {
             steps {
                 script {
-                    def userInput = input(id: 'confirm', message: 'Review the Terraform Plan. Proceed with apply?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Apply infrastructure changes', name: 'confirm'] ])
+                    def msg = params.ACTION == 'APPLY' ? 'Review the Terraform Plan. Proceed with apply?' : 'WARNING: Proceed with DESTROY?'
+                    def userInput = input(id: 'confirm', message: msg, parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Confirm action', name: 'confirm'] ])
                     if (!userInput) {
                         error "Pipeline aborted by user."
                     }
@@ -57,9 +63,19 @@ pipeline {
         }
 
         stage('Terraform Apply') {
+            when { expression { params.ACTION == 'APPLY' } }
             steps {
                 dir('environments/dev') {
                     sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+
+        stage('Terraform Destroy') {
+            when { expression { params.ACTION == 'DESTROY' } }
+            steps {
+                dir('environments/dev') {
+                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
